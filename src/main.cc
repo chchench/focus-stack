@@ -192,8 +192,20 @@ int main(int argc, const char *argv[])
       }
   }
   else {
+      std::string outputdir = options.get_arg("--outputdir", ".");
+
+      const std::filesystem::path od(outputdir);
+      if (!std::filesystem::exists(od))
+          std::filesystem::create_directory(od);
+
       std::vector<std::string> dirs;
 
+      std::string base_dir;
+      if (options.get_filenames().size() > 0) {
+          base_dir = options.get_filenames()[0];
+          dirs.push_back(base_dir);
+      }
+      
       for (auto& p : std::filesystem::recursive_directory_iterator(padres_stacking_dir))
       {
           if (p.is_directory()) {
@@ -221,11 +233,15 @@ int main(int argc, const char *argv[])
           }
 
           stack.set_inputs(files);
-          stack.set_output(buffStr);
+
+          std::string outpath = outputdir + "\\" + buffStr;
+          stack.set_output(outpath);
 
           if (!stack.run())
           {
               std::printf("ERROR:  Error encountered while stacking %s\n", buffStr);
+
+              std::filesystem::copy(std::filesystem::path(base_dir + "\\" + buffStr), std::filesystem::path(outpath));
           }
       }
   }
