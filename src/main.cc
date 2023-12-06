@@ -1,4 +1,5 @@
 #include <iostream>
+#include <filesystem>
 #include "options.hh"
 #include "focusstack.hh"
 #include <opencv2/core.hpp>
@@ -47,7 +48,7 @@ int main(int argc, const char *argv[])
     return 0;
   }
 
-  if (options.has_flag("--help") || options.get_filenames().size() < 2)
+  if (options.has_flag("--help") || (options.get_filenames().size() < 2 && options.get_arg("--padres-stacking-dir", "").length() == 0))
   {
     std::cerr << "Usage: " << argv[0] << " [options] file1.jpg file2.jpg ...\n";
     std::cerr << "\n";
@@ -94,8 +95,10 @@ int main(int argc, const char *argv[])
   }
 
   // Output file options
+  /*
   stack.set_inputs(options.get_filenames());
   stack.set_output(options.get_arg("--output", "output.jpg"));
+  */
   stack.set_depthmap(options.get_arg("--depthmap", ""));
   stack.set_3dview(options.get_arg("--3dview", ""));
   stack.set_jpgquality(std::stoi(options.get_arg("--jpgquality", "95")));
@@ -163,23 +166,68 @@ int main(int argc, const char *argv[])
     std::cerr << std::endl;
   }
 
+  std::string padres_stacking_dir = options.get_arg("--padres-stacking-dir", "");
+  
+  if (padres_stacking_dir.length() == 0) {
 
-  if (!stack.run())
-  {
-    std::printf("\nError exit due to failed steps\n");
-    return 1;
+      stack.set_inputs(options.get_filenames());
+      stack.set_output(options.get_arg("--output", "output.jpg"));
+
+      if (!stack.run())
+      {
+          std::printf("\nError exit due to failed steps\n");
+          return 1;
+      }
+
+      std::printf("\rSaved to %-40s\n", stack.get_output().c_str());
+
+      if (stack.get_depthmap() != "")
+      {
+          std::printf("\rSaved depthmap to %s\n", stack.get_depthmap().c_str());
+      }
+
+      if (stack.get_3dview() != "")
+      {
+          std::printf("\rSaved 3D preview to %s\n", stack.get_3dview().c_str());
+      }
   }
+  else {
+      std::vector<std::string> dirs;
 
-  std::printf("\rSaved to %-40s\n", stack.get_output().c_str());
+      for (auto& p : std::filesystem::recursive_directory_iterator(padres_stacking_dir))
+      {
+          if (p.is_directory()) {
+              std::printf("Frames inside directory \"%s\" will be stacked\n", p.path().string().c_str());
+              dirs.push_back(p.path().string());
+          }
+      }
 
-  if (stack.get_depthmap() != "")
-  {
-    std::printf("\rSaved depthmap to %s\n", stack.get_depthmap().c_str());
-  }
+      int num_frames = std::stoi(options.get_arg("--num-frames"));
+      std::printf("Number of frames to process = %d\n", num_frames);
 
-  if (stack.get_3dview() != "")
-  {
-    std::printf("\rSaved 3D preview to %s\n", stack.get_3dview().c_str());
+      std::vector<std::string> files;
+      for (int i = 0; i < num_frames; i++) {
+          char buff[16];
+          std::snprintf(buff, sizeof(buff), "frame%04d.bmp", i);
+          std::string buffStr = buff;
+
+          std::printf("Try to identify all images named \"%s\" ...\n", buff);
+
+          files.clear();
+          std::vector<std::string>::iterator iter = dirs.begin();
+          for (iter; iter < dirs.end(); iter++) {
+              std::string path = *iter + "\\" + buffStr;
+              files.push_back(path);
+          }
+
+          stack.set_inputs(files);
+          stack.set_output(buffStr);
+
+          if (!stack.run())
+          {
+              std::printf("ERROR:  Error encountered while stacking %s\n", buffStr);
+          }
+      }
   }
 
   return 0;

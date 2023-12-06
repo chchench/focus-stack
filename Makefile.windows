@@ -8,14 +8,14 @@
 # Finally, type nmake -f Makefile.windows
 
 CXX = cl
-CXXFLAGS = /O2 /EHsc /W2 /D_USE_MATH_DEFINES /Zi
+CXXFLAGS = /O2 /EHsc /W2 /D_USE_MATH_DEFINES /Zi /std:c++17
 
 # Path to OpenCV, you may need to edit these if your version is different
 # They can also be set on nmake command line.
-OPENCV_PATH = ..\opencv\build
+##### OPENCV_PATH = ..\opencv\build
 OPENCV_INC = $(OPENCV_PATH)\include
-OPENCV_LIB = $(OPENCV_PATH)\x64\vc14\lib\opencv_world430.lib
-OPENCV_DLL = $(OPENCV_PATH)\x64\vc14\bin\opencv_world430.dll
+OPENCV_LIB = $(OPENCV_PATH)\x64\vc16\lib\opencv_world480.lib
+OPENCV_DLL = $(OPENCV_PATH)\x64\vc16\bin\opencv_world480.dll
 CXXFLAGS = $(CXXFLAGS) /I$(OPENCV_INC)
 LDFLAGS = $(OPENCV_LIB)
 
