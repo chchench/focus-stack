@@ -214,11 +214,14 @@ int main(int argc, const char *argv[])
           }
       }
 
+      int start_frame = std::stoi(options.get_arg("--start_frame", "0"));
+      std::printf("First frame to process = %d\n", start_frame);
+
       int num_frames = std::stoi(options.get_arg("--num-frames"));
       std::printf("Number of frames to process = %d\n", num_frames);
 
       std::vector<std::string> files;
-      for (int i = 0; i < num_frames; i++) {
+      for (int i = start_frame; i < num_frames; i++) {
           char buff[16];
           std::snprintf(buff, sizeof(buff), "frame%04d.bmp", i);
           std::string buffStr = buff;
